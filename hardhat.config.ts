@@ -27,7 +27,6 @@ const accounts =
   process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [];
 
 const etherscanApiKey = process.env.ETHERSCAN_API_KEY;
-}
 
 const config: HardhatUserConfig = {
   solidity: {
