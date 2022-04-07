@@ -9,7 +9,9 @@ FRONTEND=../planktoons-frontend/core/abis
 yarn build \
   && cp \
     $BASE/existing/Planktoons.sol/Planktoons.json \
+    $BASE/NFTStaking.sol/NFTStaking.json \
       $GRAPH \
   && cp \
     $BASE/existing/Planktoons.sol/Planktoons.json \
+    $BASE/NFTStaking.sol/NFTStaking.json \
       $FRONTEND
