@@ -14,4 +14,5 @@ yarn build \
   && cp \
     $BASE/existing/Planktoons.sol/Planktoons.json \
     $BASE/NFTStaking.sol/NFTStaking.json \
+    $BASE/SPANK.sol/SPANK.json \
       $FRONTEND
