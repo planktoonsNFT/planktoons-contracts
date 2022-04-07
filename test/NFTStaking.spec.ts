@@ -2,6 +2,7 @@ import { ethers } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { MockERC721, MockERC20, NFTStaking } from "../typechain";
 import { parseUnits } from "ethers/lib/utils";
+import { expect } from "chai";
 
 describe("basic staking and unstaking", () => {
   describe("NFTStaking", () => {
@@ -36,11 +37,18 @@ describe("basic staking and unstaking", () => {
       // holder setup
       await nft.setApprovalForAll(staking.address, true);
     });
+
     it("should support staking and unstaking a single NFT", async () => {
       const tokenId = "1";
       await nft.mint(tokenId);
+      expect(await nft.balanceOf(a0)).to.equal(1);
       await staking.stakeNFTs([tokenId]);
+      expect(await nft.balanceOf(a0)).to.equal(0);
       await staking.claimAndUnstakeNFTs([tokenId]);
+      expect(await nft.balanceOf(a0)).to.equal(1);
+      //
+    });
+    it("should unstaking a subset of staked NFTs", async () => {
       //
     });
     it("should revert if staking an unowned NFT", async () => {
@@ -50,6 +58,15 @@ describe("basic staking and unstaking", () => {
       //
     });
     it("should revert if unstaking an NFT staked by a different address", async () => {
+      //
+    });
+    it("should revert setting up with an invalid nft", async () => {
+      //
+    });
+    it("should revert setting up with an invalid token", async () => {
+      //
+    });
+    it("should revert setting up more than once", async () => {
       //
     });
   });

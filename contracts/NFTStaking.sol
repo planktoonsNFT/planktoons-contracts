@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IERC721} from "@openzeppelin/contracts/interfaces/IERC721.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
+import {IERC165} from "@openzeppelin/contracts/interfaces/IERC165.sol";
 
 struct AccountStake {
     uint256 earned;
@@ -16,7 +17,7 @@ struct AccountStake {
 /// as claimable tokens.
 contract NFTStaking is Ownable {
     /// @notice The amount of tokens that are emitted per day per NFT.
-    uint256 public immutable DAILY_RATE = 1 ether;
+    uint256 public constant DAILY_RATE = 1 ether;
 
     // ---
     // Storage
@@ -50,6 +51,9 @@ contract NFTStaking is Ownable {
     /// @notice Staking contract was already setup.
     error AlreadySetup();
 
+    /// @notice Setup was attempted with an invalid token or nft reference.
+    error InvalidTokens();
+
     /// @notice An invalid NFT was attempted to be unstaked.
     error InvalidNFT();
 
@@ -68,8 +72,19 @@ contract NFTStaking is Ownable {
         nft = nft_;
         token = token_;
 
+        // check that the addresses are valid
+        if (!IERC165(nft).supportsInterface(type(IERC721).interfaceId))
+            revert InvalidTokens();
+        try token.totalSupply() {
+            // nop
+        } catch {
+            revert InvalidTokens();
+        }
+
         if (deposit_ > 0) {
-            token.transferFrom(msg.sender, address(this), deposit_); // reverts if not approved
+            // will revert if staking not approved by msg.sender, or msg.sender
+            // has insufficient balance
+            token.transferFrom(msg.sender, address(this), deposit_);
         }
     }
 
@@ -124,5 +139,10 @@ contract NFTStaking is Ownable {
         uint256 emitted = (_stakes[account].stakedCount * DAILY_RATE * delta) /
             1 days;
         return emitted + _stakes[account].earned;
+    }
+
+    /// @notice Returns the total NFTs that have been staked by an account
+    function getStakedBalance(address account) public view returns (uint256) {
+        return _stakes[account].stakedCount;
     }
 }
