@@ -25,12 +25,16 @@ describe("basic staking and unstaking", () => {
         NFTStaking.deploy(),
         ethers.getSigners(),
       ]);
+      [a0, a1, a2, a3] = accounts.map((a) => a.address);
+
+      // admin setup
       const initialDeposit = parseUnits("1000000");
       await token.mint(initialDeposit);
-      await token.approve(staking.address, parseUnits("10000000000000"));
-      await nft.setApprovalForAll(staking.address, true);
+      await token.approve(staking.address, initialDeposit);
       await staking.setup(nft.address, token.address, initialDeposit);
-      [a0, a1, a2, a3] = accounts.map((a) => a.address);
+
+      // holder setup
+      await nft.setApprovalForAll(staking.address, true);
     });
     it("should support staking and unstaking a single NFT", async () => {
       const tokenId = "1";
