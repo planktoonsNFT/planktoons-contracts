@@ -14,8 +14,8 @@ struct Order {
     uint256 amount;
 }
 
-/// @notice Simple marketplace (eg, for community prizes) that stores inventory
-/// off chain and requires a proof to be submitted when purchasing
+/// @notice Simple vending machine (eg, for community prizes) that stores
+/// inventory off chain and requires a proof to be submitted when purchasing
 contract MerkleMarket is Ownable {
     // ---
     // Events

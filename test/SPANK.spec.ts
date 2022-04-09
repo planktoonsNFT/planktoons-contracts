@@ -4,7 +4,7 @@ import { SPANK } from "../typechain";
 import { parseUnits } from "ethers/lib/utils";
 import { expect } from "chai";
 
-describe("SPANK token", () => {
+describe("SPANK.sol", () => {
   // ---
   // fixtures
   // ---
