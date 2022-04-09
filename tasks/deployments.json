@@ -2,6 +2,7 @@
   "rinkeby": {
     "Planktoons": "0x3281384ed7748dF5a6F5792FeEE6Abc705bc1C49",
     "SPANK": "0xB0278c86641f9b6853Db886801785A29E8b479A7",
-    "PlanktoonsStaking": "0x62761008F9D60F0c2c07B5D200b8607BD17314FE"
+    "PlanktoonsStaking": "0x62761008F9D60F0c2c07B5D200b8607BD17314FE",
+    "PlanktoonsMarket": "0x5d2bF985e15d29860f9F83a4290886cfd0bb24ee"
   }
 }
