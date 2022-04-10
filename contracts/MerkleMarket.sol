@@ -53,12 +53,12 @@ contract MerkleMarket is Ownable {
     // Admin functionality
     // ---
 
-    /// @notice set the merkle root of the inventory tree
+    /// @notice Set the merkle root of the inventory tree.
     function setInventoryRoot(bytes32 root) external onlyOwner {
         inventoryRoot = root;
     }
 
-    /// @notice withdraw tokens from the marketplace
+    /// @notice Withdraw tokens from the marketplace.
     function withdraw(IERC20 token) external onlyOwner {
         token.transfer(msg.sender, token.balanceOf(address(this)));
     }
@@ -92,5 +92,18 @@ contract MerkleMarket is Ownable {
                 orders[i].amount
             );
         }
+    }
+
+    // ---
+    // Views
+    // ---
+
+    /// @notice Get the total purchased count for as specific item.
+    function getTotalPurchased(string calldata itemId)
+        external
+        view
+        returns (uint256)
+    {
+        return _purchased[itemId];
     }
 }

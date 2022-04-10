@@ -30,6 +30,7 @@ describe("MerkleMarket.sol", () => {
 
   it("should allow basic purchasing", async () => {
     await token.mint(parseUnits("100"));
+    expect(await market.getTotalPurchased("foo")).to.equal(0);
     await market.purchase([
       {
         itemId: "foo",
@@ -41,6 +42,7 @@ describe("MerkleMarket.sol", () => {
       },
     ]);
     expect(await token.balanceOf(a0)).to.equal(parseUnits("80"));
+    expect(await market.getTotalPurchased("foo")).to.equal(2);
   });
   it("should allow allow owner to withdraw tokens", async () => {
     //
