@@ -33,10 +33,10 @@ contract MerkleMarket is Ownable {
     // Errors
     // ---
 
-    /// @notice A purchase was attempted for an item that is out of stock
+    /// @notice A purchase was attempted for an item that is out of stock.
     error NoRemainingSupply();
 
-    /// @notice A purchase was attempted with an invalid inventory proof
+    /// @notice A purchase was attempted with an invalid inventory proof.
     error InvalidItem();
 
     // ---
