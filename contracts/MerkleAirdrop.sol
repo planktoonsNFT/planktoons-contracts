@@ -46,8 +46,8 @@ contract MerkleAirdrop is Ownable {
     /// @notice Set the airdropped token, merkle root, and do an initial deposit
     function setup(
         IERC20 token_,
-        bytes32 root,
-        uint256 deposit
+        uint256 deposit,
+        bytes32 root
     ) external onlyOwner {
         if (token != IERC20(address(0))) revert AlreadySetup();
 
@@ -91,7 +91,7 @@ contract MerkleAirdrop is Ownable {
         uint256 toClaim = claimed < maxAmount ? maxAmount - claimed : 0;
 
         // silent nop
-        if (claimed == 0) return 0;
+        if (toClaim == 0) return 0;
 
         _claimed[recipient] = maxAmount;
         emit TokensClaimed(recipient, toClaim);
