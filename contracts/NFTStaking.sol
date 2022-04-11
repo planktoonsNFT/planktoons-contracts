@@ -106,13 +106,25 @@ contract NFTStaking is Ownable {
         }
     }
 
+    function _claimFor(address account) internal {
+        uint256 claimable = getClaimable(account);
+        if (claimable == 0) return; // allow nop
+        _stakes[account].lastClaimTime = block.timestamp;
+        _stakes[account].earned = 0;
+        emit TokensClaimed(account, claimable);
+
+        // reverts if insufficient rewards reserves
+        token.transfer(account, claimable);
+    }
+
     /// @notice Claim all earned tokens for msg.sender
     function claim() public {
-        uint256 claimable = getClaimable(msg.sender);
-        _stakes[msg.sender].lastClaimTime = block.timestamp;
-        _stakes[msg.sender].earned = 0;
-        token.transfer(msg.sender, claimable); // reverts if insufficient balance
-        emit TokensClaimed(msg.sender, claimable);
+        _claimFor(msg.sender);
+    }
+
+    /// @notice Claim tokens on behalf of another account. Permissionless
+    function claimFor(address account) external {
+        _claimFor(account);
     }
 
     /// @notice Claim all unearned tokens and unstake a subset of staked NFTs
