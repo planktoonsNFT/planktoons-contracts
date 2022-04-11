@@ -43,7 +43,8 @@ contract MerkleAirdrop is Ownable {
     // Admin
     // ---
 
-    /// @notice Set the airdropped token, merkle root, and do an initial deposit
+    /// @notice Set the airdropped token, merkle root, and do an initial
+    /// deposit. Only callable by owner, only callable once.
     function setup(
         IERC20 token_,
         uint256 deposit,
@@ -62,7 +63,13 @@ contract MerkleAirdrop is Ownable {
         token_.transferFrom(msg.sender, address(this), deposit);
     }
 
-    /// @notice Set the merkle root of the claim tree.
+    /// @notice Withdraw some amount of tokens from the contract. Only callable
+    /// by owner.
+    function withdraw(uint256 amount) external onlyOwner {
+        token.transfer(msg.sender, amount);
+    }
+
+    /// @notice Set the merkle root of the claim tree. Only callable by owner.
     function setClaimListRoot(bytes32 root) external onlyOwner {
         claimListRoot = root;
         emit ClaimListRootUpdated(root);
