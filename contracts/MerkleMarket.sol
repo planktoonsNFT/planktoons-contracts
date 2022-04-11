@@ -4,7 +4,6 @@ pragma solidity ^0.8.0;
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import {IERC165} from "@openzeppelin/contracts/interfaces/IERC165.sol";
 
 struct Order {
     string itemId;
@@ -46,7 +45,7 @@ contract MerkleMarket is Ownable {
     // Storage
     // ---
 
-    // merkle root of the inventory tree
+    /// @notice The merkle root of the inventory tree.
     bytes32 public inventoryRoot;
 
     // item ID -> total purchased so far

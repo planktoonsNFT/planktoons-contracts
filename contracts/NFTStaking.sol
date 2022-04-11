@@ -29,6 +29,10 @@ contract NFTStaking is Ownable {
     /// @notice The token that is rewarded for staking.
     IERC20 public token;
 
+    //// @notice Generate rewards up until this timestamp
+    uint256 public rewardUntilTimestamp = block.timestamp + 365 days;
+
+    // all staking data by owner address
     mapping(address => AccountStake) private _stakes;
 
     // ---
@@ -48,14 +52,20 @@ contract NFTStaking is Ownable {
     // Errors
     // ---
 
-    /// @notice Staking contract was already setup.
+    /// @notice Setup was attempted more than once.
     error AlreadySetup();
 
-    /// @notice Setup was attempted with an invalid token or nft reference.
-    error InvalidTokens();
+    /// @notice Setup was attempted with an invalid nft reference.
+    error InvalidToken();
 
-    /// @notice An invalid NFT was attempted to be unstaked.
-    error InvalidNFT();
+    /// @notice A token was attempted to be staked that wasn't owned by the staker.
+    error NotTokenOwner();
+
+    /// @notice An invalid NFT was attempted to be unstaked (eg, not owned or staked)
+    error InvalidUnstake();
+
+    /// @notice Reward end timestamp was set to an earlier date
+    error InvalidRewardUntilTimestamp();
 
     // ---
     // Admin functionality
@@ -72,19 +82,30 @@ contract NFTStaking is Ownable {
         nft = nft_;
         token = token_;
 
-        // check that the addresses are valid
-        if (!IERC165(nft).supportsInterface(type(IERC721).interfaceId))
-            revert InvalidTokens();
-        try token.totalSupply() {
-            // nop
-        } catch {
-            revert InvalidTokens();
+        // check that the nft is a valid 721
+        if (!IERC165(nft).supportsInterface(type(IERC721).interfaceId)) {
+            revert InvalidToken();
         }
 
-        if (deposit_ > 0) {
-            // will revert if staking not approved by msg.sender, or msg.sender
-            // has insufficient balance
-            token.transferFrom(msg.sender, address(this), deposit_);
+        // reverts if contract not approved to spend msg.sender tokens
+        // reverts if insufficient balance in msg.sender
+        // reverts if invalid token reference
+        // reverts if deposit = 0
+        token_.transferFrom(msg.sender, address(this), deposit_);
+    }
+
+    /// @notice Deposit more reward tokens and update the cutoff date. If cutoff = 0
+    function depositRewards(uint256 amount, uint256 cutoff) external {
+        // reverts if contract not approved to spend msg.sender tokens
+        // reverts if insufficient balance in msg.sender
+        // reverts if invalid token reference
+        // reverts if deposit = 0
+        token.transferFrom(msg.sender, address(this), amount);
+
+        if (cutoff > 0) {
+            if (cutoff < rewardUntilTimestamp)
+                revert InvalidRewardUntilTimestamp();
+            rewardUntilTimestamp = cutoff;
         }
     }
 
@@ -94,51 +115,77 @@ contract NFTStaking is Ownable {
 
     /// @notice Stake multiple NFTs
     function stakeNFTs(uint256[] memory tokenIds) external {
+        // flush rewards to accumulator
         _stakes[msg.sender].earned = getClaimable(msg.sender);
         _stakes[msg.sender].lastClaimTime = block.timestamp;
         _stakes[msg.sender].stakedCount += tokenIds.length;
 
         for (uint256 i = 0; i < tokenIds.length; i++) {
             uint256 tokenId = tokenIds[i];
+
+            // reverts if nft isnt owned by caller
+            // reverts if already staked (eg, a duplicate token ID)
+            if (nft.ownerOf(tokenId) != msg.sender) revert NotTokenOwner();
+
             _stakes[msg.sender].stakedTokens[tokenId] = true;
-            nft.transferFrom(msg.sender, address(this), tokenId); // reverts if not approved
             emit NFTStaked(msg.sender, tokenId);
+
+            // reverts if contract not approved to move nft tokens
+            // reverts if contract is not set up
+            nft.transferFrom(msg.sender, address(this), tokenId);
         }
     }
 
-    function _claimFor(address account) internal {
-        uint256 claimable = getClaimable(account);
-        if (claimable == 0) return; // allow nop
-        _stakes[account].lastClaimTime = block.timestamp;
-        _stakes[account].earned = 0;
-        emit TokensClaimed(account, claimable);
-
-        // reverts if insufficient rewards reserves
-        token.transfer(account, claimable);
-    }
-
     /// @notice Claim all earned tokens for msg.sender
-    function claim() public {
+    function claim() external {
         _claimFor(msg.sender);
     }
 
-    /// @notice Claim tokens on behalf of another account. Permissionless
+    /// @notice Permissionlessly claim tokens on behalf of another account.
     function claimFor(address account) external {
         _claimFor(account);
     }
 
     /// @notice Claim all unearned tokens and unstake a subset of staked NFTs
     function claimAndUnstakeNFTs(uint256[] memory tokenIds) external {
-        claim();
+        _claimFor(msg.sender);
         _stakes[msg.sender].stakedCount -= tokenIds.length;
 
         for (uint256 i = 0; i < tokenIds.length; i++) {
-            uint256 tokenId = tokenIds[i];
-            if (!_stakes[msg.sender].stakedTokens[tokenId]) revert InvalidNFT();
-            delete _stakes[msg.sender].stakedTokens[tokenId];
-            nft.transferFrom(address(this), msg.sender, tokenId);
-            emit NFTUnstaked(msg.sender, tokenId);
+            _unstake(msg.sender, tokenIds[i]);
         }
+    }
+
+    /// @notice Unstake without claiming -- do not call unless NFTs are stuck
+    /// due to insufficient rewards reserve balance.
+    function emergencyUnstake(uint256[] memory tokenIds) external {
+        // flush rewards to accumulator
+        _stakes[msg.sender].earned += getClaimable(msg.sender);
+        _stakes[msg.sender].lastClaimTime = block.timestamp;
+        _stakes[msg.sender].stakedCount -= tokenIds.length;
+
+        for (uint256 i = 0; i < tokenIds.length; i++) {
+            _unstake(msg.sender, tokenIds[i]);
+        }
+    }
+
+    function _unstake(address account, uint256 tokenId) internal {
+        if (!_stakes[account].stakedTokens[tokenId]) revert InvalidUnstake();
+        delete _stakes[account].stakedTokens[tokenId];
+        emit NFTUnstaked(account, tokenId);
+
+        nft.transferFrom(address(this), account, tokenId);
+    }
+
+    function _claimFor(address account) internal {
+        uint256 claimable = getClaimable(account);
+        if (claimable == 0) return; // allow silent nop
+        _stakes[account].earned = 0;
+        _stakes[account].lastClaimTime = block.timestamp;
+        emit TokensClaimed(account, claimable);
+
+        // reverts if insufficient rewards reserves
+        token.transfer(account, claimable);
     }
 
     // ---
@@ -147,7 +194,10 @@ contract NFTStaking is Ownable {
 
     /// @notice Returns the total claimable tokens for a given account.
     function getClaimable(address account) public view returns (uint256) {
-        uint256 delta = block.timestamp - _stakes[account].lastClaimTime;
+        uint256 claimUntil = block.timestamp < rewardUntilTimestamp
+            ? block.timestamp
+            : rewardUntilTimestamp;
+        uint256 delta = claimUntil - _stakes[account].lastClaimTime;
         uint256 emitted = (_stakes[account].stakedCount * DAILY_RATE * delta) /
             1 days;
         return emitted + _stakes[account].earned;

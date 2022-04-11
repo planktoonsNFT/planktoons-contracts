@@ -53,6 +53,15 @@ describe("NFTStaking.sol", () => {
   it("should revert if staking an unowned NFT", async () => {
     //
   });
+  it("should revert if attempting to set cutoff in the past", async () => {
+    //
+  });
+  it("should revert if duplicate token IDs when staking", async () => {
+    //
+  });
+  it("should revert if duplicate token IDs when unstaking", async () => {
+    //
+  });
   it("should revert if unstaking an unstaked NFT", async () => {
     //
   });
