@@ -39,6 +39,7 @@ describe("MerkleMarket.sol", () => {
         maxAmount: 10,
         proof: [],
         token: token.address,
+        memo: "hey",
       },
     ]);
     expect(await token.balanceOf(a0)).to.equal(parseUnits("80"));

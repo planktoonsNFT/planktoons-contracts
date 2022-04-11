@@ -13,6 +13,7 @@ struct Order {
     uint256 maxAmount;
     bytes32[] proof;
     uint256 amount;
+    string memo;
 }
 
 /// @notice Simple vending machine (eg, for community prizes) that stores
@@ -27,7 +28,8 @@ contract MerkleMarket is Ownable {
         string itemId,
         IERC20 token,
         uint256 unitPrice,
-        uint256 amount
+        uint256 amount,
+        string memo
     );
 
     // ---
@@ -90,7 +92,8 @@ contract MerkleMarket is Ownable {
                 orders[i].itemId,
                 orders[i].token,
                 orders[i].unitPrice,
-                orders[i].amount
+                orders[i].amount,
+                orders[i].memo
             );
         }
     }
