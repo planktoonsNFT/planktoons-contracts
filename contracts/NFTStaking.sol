@@ -26,7 +26,7 @@ contract NFTStaking is Ownable {
     /// @notice The NFT that can be staked in this contract.
     IERC721 public nft;
 
-    /// @notice The token that is emitted from this contract.
+    /// @notice The token that is rewarded for staking.
     IERC20 public token;
 
     mapping(address => AccountStake) private _stakes;
