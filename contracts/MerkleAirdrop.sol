@@ -108,4 +108,13 @@ contract MerkleAirdrop is Ownable {
 
         return toClaim;
     }
+
+    // ---
+    // Views
+    // ---
+
+    /// @notice Returns the total amount of tokens claimed for an account
+    function totalClaimed(address account) external view returns (uint256) {
+        return _claimed[account];
+    }
 }
