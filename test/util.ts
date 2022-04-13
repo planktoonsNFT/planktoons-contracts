@@ -11,7 +11,9 @@ export const createMerkleTree = (types: string[], data: unknown[][]) => {
     return proof;
   };
 
-  return { tree, createProof };
+  const createProofForIndex = (index: number) => createProof(data[index]);
+
+  return { tree, createProof, createProofForIndex };
 };
 
 export const zero256 =
