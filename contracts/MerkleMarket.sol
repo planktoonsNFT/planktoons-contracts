@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
 struct Order {
     string itemId;
@@ -72,7 +73,20 @@ contract MerkleMarket is Ownable {
     /// @notice Purchase items from the marketplace
     function purchase(Order[] calldata orders) external {
         for (uint256 i = 0; i < orders.length; i++) {
-            // TODO: assert proof is correct
+            bool isValid = MerkleProof.verify(
+                orders[i].proof,
+                inventoryRoot,
+                keccak256(
+                    abi.encodePacked(
+                        orders[i].itemId,
+                        orders[i].token,
+                        orders[i].unitPrice,
+                        orders[i].maxAmount
+                    )
+                )
+            );
+
+            if (!isValid) revert InvalidItem();
 
             // make sure there is remaining supply and update the total purchase
             // count for this item

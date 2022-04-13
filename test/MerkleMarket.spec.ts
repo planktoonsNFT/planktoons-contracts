@@ -1,6 +1,7 @@
 import { ethers } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { MockERC721, MockERC20, NFTStaking, MerkleMarket } from "../typechain";
+import { MockERC20, MerkleMarket } from "../typechain";
+import { createMerkleTree, zero256 } from "./util";
 import { parseUnits } from "ethers/lib/utils";
 import { expect } from "chai";
 
@@ -28,16 +29,27 @@ describe("MerkleMarket.sol", () => {
     await token.approve(market.address, parseUnits("100000000000000000"));
   });
 
+  const getTree = () =>
+    createMerkleTree(
+      ["string", "address", "uint256", "uint256"],
+      [
+        ["foo", token.address, parseUnits("10"), 100],
+        ["bar", token.address, parseUnits("20"), 50],
+      ]
+    );
+
   it("should allow basic purchasing", async () => {
+    const { tree, createProofForIndex } = getTree();
     await token.mint(parseUnits("100"));
+    await market.setInventoryRoot(tree.getHexRoot());
     expect(await market.getTotalPurchased("foo")).to.equal(0);
     await market.purchase([
       {
         itemId: "foo",
         amount: 2,
         unitPrice: parseUnits("10"),
-        maxAmount: 10,
-        proof: [],
+        maxAmount: 100,
+        proof: createProofForIndex(0),
         token: token.address,
         memo: "hey",
       },
@@ -55,7 +67,23 @@ describe("MerkleMarket.sol", () => {
     //
   });
   it("should revert if order has invalid proof", async () => {
-    //
+    const { tree, createProofForIndex } = getTree();
+    await token.mint(parseUnits("100"));
+    await market.setInventoryRoot(tree.getHexRoot());
+    expect(await market.getTotalPurchased("foo")).to.equal(0);
+    await expect(
+      market.purchase([
+        {
+          itemId: "foo",
+          amount: 2,
+          unitPrice: parseUnits("10"),
+          maxAmount: 10,
+          proof: createProofForIndex(0),
+          token: token.address,
+          memo: "hey",
+        },
+      ])
+    ).to.be.revertedWith("InvalidItem()");
   });
   it("should revert if non owner attempts to set inventory root", async () => {
     //
