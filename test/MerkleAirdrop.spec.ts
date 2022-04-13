@@ -1,8 +1,19 @@
 import { ethers } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { MockERC20, MerkleAirdrop } from "../typechain";
 import { parseUnits } from "ethers/lib/utils";
 import { expect } from "chai";
+import { BigNumber } from "ethers";
+import { createMerkleTree, zero256 } from "./util";
+import { MockERC20, MerkleAirdrop } from "../typechain";
+
+const createTree = (
+  entries: Array<{ recipient: string; amount: BigNumber }>
+) => {
+  return createMerkleTree(
+    ["address", "uint256"],
+    entries.map((e) => [e.recipient, e.amount])
+  );
+};
 
 describe("MerkleAirdrop.sol", () => {
   // ---
@@ -28,14 +39,137 @@ describe("MerkleAirdrop.sol", () => {
     await token.approve(airdrop.address, parseUnits("100000000000000000"));
   });
 
+  const getTree = () =>
+    createTree([
+      {
+        recipient: a0,
+        amount: parseUnits("200"),
+      },
+      {
+        recipient: a1,
+        amount: parseUnits("300"),
+      },
+    ]);
+
   it("should allow basic claiming", async () => {
-    await token.mint(parseUnits("1000"));
-    await airdrop.setup(
-      token.address,
-      parseUnits("1000"),
-      "0x0000000000000000000000000000000000000000000000000000000000000000"
+    const { tree, createProof } = getTree();
+    await token.mint(parseUnits("500"));
+
+    const airdrop1 = airdrop.connect(accounts[1]);
+
+    await airdrop.setup(token.address, parseUnits("500"), tree.getHexRoot());
+    await airdrop.claim(
+      parseUnits("200"),
+      createProof([a0, parseUnits("200")])
     );
-    await airdrop.claim(parseUnits("100"), []);
-    expect(await token.balanceOf(a0)).to.equal(parseUnits("100"));
+    await airdrop1.claim(
+      parseUnits("300"),
+      createProof([a1, parseUnits("300")])
+    );
+    expect(await token.balanceOf(a0)).to.equal(parseUnits("200"));
+    expect(await token.balanceOf(a1)).to.equal(parseUnits("300"));
+  });
+  it("should allow owner to withdraw funds from the contract", async () => {
+    const { tree, createProof } = getTree();
+    await token.mint(parseUnits("500"));
+    await airdrop.setup(token.address, parseUnits("500"), tree.getHexRoot());
+    await airdrop.claim(
+      parseUnits("200"),
+      createProof([a0, parseUnits("200")])
+    );
+    await airdrop.withdraw(parseUnits("10"));
+    expect(await token.balanceOf(a0)).to.equal(parseUnits("210"));
+    expect(await token.balanceOf(airdrop.address)).to.equal(parseUnits("290"));
+  });
+  it("should allow owner to change claim list root", async () => {
+    const { tree, createProof } = getTree();
+    await token.mint(parseUnits("500"));
+    await airdrop.setup(token.address, parseUnits("500"), zero256);
+    await airdrop.setClaimListRoot(tree.getHexRoot());
+    await airdrop.claim(
+      parseUnits("200"),
+      createProof([a0, parseUnits("200")])
+    );
+    expect(await token.balanceOf(a0)).to.equal(parseUnits("200"));
+  });
+  it("should return total claimed amount for an account", async () => {
+    const { tree, createProof } = getTree();
+    await token.mint(parseUnits("500"));
+    await airdrop.setup(token.address, parseUnits("500"), tree.getHexRoot());
+    expect(await airdrop.totalClaimed(a0)).to.equal(0);
+    await airdrop.claim(
+      parseUnits("200"),
+      createProof([a0, parseUnits("200")])
+    );
+    expect(await airdrop.totalClaimed(a0)).to.equal(parseUnits("200"));
+  });
+  it("should allow nop claim", async () => {
+    const { tree, createProof } = getTree();
+    await token.mint(parseUnits("500"));
+    await airdrop.setup(token.address, parseUnits("500"), tree.getHexRoot());
+    await airdrop.claim(
+      parseUnits("200"),
+      createProof([a0, parseUnits("200")])
+    );
+    // nop
+    await airdrop.claim(
+      parseUnits("200"),
+      createProof([a0, parseUnits("200")])
+    );
+    expect(await airdrop.totalClaimed(a0)).to.equal(parseUnits("200"));
+    expect(await token.balanceOf(a0)).to.equal(parseUnits("200"));
+  });
+  it("should revert if setup more than once", async () => {
+    const { tree } = getTree();
+    await token.mint(parseUnits("1000"));
+    await airdrop.setup(token.address, parseUnits("500"), tree.getHexRoot());
+    await expect(
+      airdrop.setup(token.address, parseUnits("500"), tree.getHexRoot())
+    ).to.be.revertedWith("AlreadySetup()");
+  });
+  it("should revert if invalid claim proof", async () => {
+    const { tree, createProof } = getTree();
+    await token.mint(parseUnits("1000"));
+    await airdrop.setup(token.address, parseUnits("500"), tree.getHexRoot());
+
+    // invalid proof
+    await expect(
+      airdrop.claim(parseUnits("200"), createProof([a0, parseUnits("300")]))
+    ).to.be.revertedWith("InvalidClaim()");
+
+    // invalid data
+    await expect(
+      airdrop.claim(parseUnits("300"), createProof([a0, parseUnits("200")]))
+    ).to.be.revertedWith("InvalidClaim()");
+    await expect(
+      airdrop
+        .connect(accounts[1])
+        .claim(parseUnits("200"), createProof([a0, parseUnits("200")]))
+    ).to.be.revertedWith("InvalidClaim()");
+  });
+  it("should revert if non-owner calls setup", async () => {
+    const { tree } = getTree();
+    const airdrop1 = airdrop.connect(accounts[1]);
+    await expect(
+      airdrop1.setup(token.address, parseUnits("500"), tree.getHexRoot())
+    ).to.be.revertedWith("caller is not the owner");
+  });
+  it("should revert if non-owner calls withdraw", async () => {
+    const { tree } = getTree();
+    await token.mint(parseUnits("500"));
+    await airdrop.setup(token.address, parseUnits("500"), tree.getHexRoot());
+    const airdrop1 = airdrop.connect(accounts[1]);
+    expect(airdrop1.withdraw(parseUnits("100"))).to.be.revertedWith(
+      "caller is not the owner"
+    );
+  });
+  it("should revert if non-owner calls setClaimRoot", async () => {
+    const { tree } = getTree();
+    await token.mint(parseUnits("500"));
+    await airdrop.setup(token.address, parseUnits("500"), zero256);
+    const airdrop1 = airdrop.connect(accounts[1]);
+    await expect(
+      airdrop1.setClaimListRoot(tree.getHexRoot())
+    ).to.be.revertedWith("caller is not the owner");
   });
 });

@@ -4,7 +4,10 @@ pragma solidity ^0.8.0;
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {IERC165} from "@openzeppelin/contracts/interfaces/IERC165.sol";
+import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
+/// @notice Simple merkle airdrop contract. Claimed tokens come from reserves
+/// held by the contract
 contract MerkleAirdrop is Ownable {
     // ---
     // Events
@@ -80,27 +83,33 @@ contract MerkleAirdrop is Ownable {
     // ---
 
     /// @notice Claim airdropped tokens
-    function claim(uint256 maxAmount, bytes32[] calldata proof)
+    function claim(uint256 maxClaimable, bytes32[] calldata proof)
         external
         returns (uint256)
     {
-        return _claimFor(msg.sender, maxAmount, proof);
+        return _claimFor(msg.sender, maxClaimable, proof);
     }
 
     function _claimFor(
         address recipient,
-        uint256 maxAmount,
+        uint256 maxClaimable,
         bytes32[] calldata proof
     ) internal returns (uint256) {
-        // TODO: assert proof is correct
+        bool isValid = MerkleProof.verify(
+            proof,
+            claimListRoot,
+            keccak256(abi.encodePacked(recipient, maxClaimable))
+        );
+
+        if (!isValid) revert InvalidClaim();
 
         uint256 claimed = _claimed[recipient];
-        uint256 toClaim = claimed < maxAmount ? maxAmount - claimed : 0;
+        uint256 toClaim = claimed < maxClaimable ? maxClaimable - claimed : 0;
 
         // silent nop
         if (toClaim == 0) return 0;
 
-        _claimed[recipient] = maxAmount;
+        _claimed[recipient] = maxClaimable;
         emit TokensClaimed(recipient, toClaim);
 
         // reverts if insufficient reserve balance
