@@ -66,12 +66,6 @@ contract MerkleAirdrop is Ownable {
         token_.transferFrom(msg.sender, address(this), deposit);
     }
 
-    /// @notice Withdraw some amount of tokens from the contract. Only callable
-    /// by owner.
-    function withdraw(uint256 amount) external onlyOwner {
-        token.transfer(msg.sender, amount);
-    }
-
     /// @notice Set the merkle root of the claim tree. Only callable by owner.
     function setClaimListRoot(bytes32 root) external onlyOwner {
         claimListRoot = root;

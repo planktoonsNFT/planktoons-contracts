@@ -69,18 +69,6 @@ describe("MerkleAirdrop.sol", () => {
     expect(await token.balanceOf(a0)).to.equal(parseUnits("200"));
     expect(await token.balanceOf(a1)).to.equal(parseUnits("300"));
   });
-  it("should allow owner to withdraw funds from the contract", async () => {
-    const { tree, createProof } = getTree();
-    await token.mint(parseUnits("500"));
-    await airdrop.setup(token.address, parseUnits("500"), tree.getHexRoot());
-    await airdrop.claim(
-      parseUnits("200"),
-      createProof([a0, parseUnits("200")])
-    );
-    await airdrop.withdraw(parseUnits("10"));
-    expect(await token.balanceOf(a0)).to.equal(parseUnits("210"));
-    expect(await token.balanceOf(airdrop.address)).to.equal(parseUnits("290"));
-  });
   it("should allow owner to change claim list root", async () => {
     const { tree, createProof } = getTree();
     await token.mint(parseUnits("500"));
@@ -153,15 +141,6 @@ describe("MerkleAirdrop.sol", () => {
     await expect(
       airdrop1.setup(token.address, parseUnits("500"), tree.getHexRoot())
     ).to.be.revertedWith("caller is not the owner");
-  });
-  it("should revert if non-owner calls withdraw", async () => {
-    const { tree } = getTree();
-    await token.mint(parseUnits("500"));
-    await airdrop.setup(token.address, parseUnits("500"), tree.getHexRoot());
-    const airdrop1 = airdrop.connect(accounts[1]);
-    expect(airdrop1.withdraw(parseUnits("100"))).to.be.revertedWith(
-      "caller is not the owner"
-    );
   });
   it("should revert if non-owner calls setClaimRoot", async () => {
     const { tree } = getTree();
