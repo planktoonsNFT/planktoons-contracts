@@ -15,7 +15,8 @@
   },
   "dependencies": {
     "@openzeppelin/contracts": "4.4.1",
-    "@openzeppelin/contracts-upgradeable": "4.4.1"
+    "@openzeppelin/contracts-upgradeable": "4.4.1",
+    "merkletreejs": "^0.2.31"
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.3",
