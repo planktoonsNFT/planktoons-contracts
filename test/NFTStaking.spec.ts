@@ -50,6 +50,9 @@ describe("NFTStaking.sol", () => {
   it("should unstaking a subset of staked NFTs", async () => {
     //
   });
+  it("should allow permissionlessly 3rd party claiming", async () => {
+    //
+  });
   it("should revert if staking an unowned NFT", async () => {
     //
   });

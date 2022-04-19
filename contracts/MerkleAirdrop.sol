@@ -13,9 +13,6 @@ contract MerkleAirdrop is Ownable {
     // Events
     // ---
 
-    /// @notice The merkle root of the claim list tree was updated.
-    event ClaimListRootUpdated(bytes32 root);
-
     /// @notice Tokens were claimed for a recipient
     event TokensClaimed(address recipient, uint256 amount);
 
@@ -28,6 +25,9 @@ contract MerkleAirdrop is Ownable {
 
     /// @notice A claim was attempted with an invalid claim list proof.
     error InvalidClaim();
+
+    /// @notice A claim on behalf of another address came from an account with no allowance.
+    error NotApproved();
 
     // ---
     // Storage
@@ -57,7 +57,6 @@ contract MerkleAirdrop is Ownable {
 
         token = token_;
         claimListRoot = root;
-        emit ClaimListRootUpdated(root);
 
         // reverts if contract not approved to spend msg.sender tokens
         // reverts if insufficient balance in msg.sender
@@ -69,19 +68,27 @@ contract MerkleAirdrop is Ownable {
     /// @notice Set the merkle root of the claim tree. Only callable by owner.
     function setClaimListRoot(bytes32 root) external onlyOwner {
         claimListRoot = root;
-        emit ClaimListRootUpdated(root);
     }
 
     // ---
     // End users
     // ---
 
-    /// @notice Claim airdropped tokens
+    /// @notice Claim msg.sender's airdropped tokens.
     function claim(uint256 maxClaimable, bytes32[] calldata proof)
         external
         returns (uint256)
     {
         return _claimFor(msg.sender, maxClaimable, proof);
+    }
+
+    /// @notice Permissionlessly claim tokens on behalf of another account.
+    function claimFor(
+        address recipient,
+        uint256 maxClaimable,
+        bytes32[] calldata proof
+    ) external returns (uint256) {
+        return _claimFor(recipient, maxClaimable, proof);
     }
 
     function _claimFor(
@@ -100,7 +107,7 @@ contract MerkleAirdrop is Ownable {
         uint256 claimed = _claimed[recipient];
         uint256 toClaim = claimed < maxClaimable ? maxClaimable - claimed : 0;
 
-        // silent nop
+        // allow silent / non-reverting nop
         if (toClaim == 0) return 0;
 
         _claimed[recipient] = maxClaimable;

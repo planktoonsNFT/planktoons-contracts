@@ -151,4 +151,7 @@ describe("MerkleAirdrop.sol", () => {
       airdrop1.setClaimListRoot(tree.getHexRoot())
     ).to.be.revertedWith("caller is not the owner");
   });
+  it("should allow permissionlessly 3rd party claiming", async () => {
+    //
+  });
 });
