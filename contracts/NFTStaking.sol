@@ -7,9 +7,16 @@ import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {IERC165} from "@openzeppelin/contracts/interfaces/IERC165.sol";
 
 struct AccountStake {
+    // buffered rewards... tokens earned by an account but not yet distributed
     uint256 earned;
+
+    // the last time a claim occured
     uint256 lastClaimTime;
+
+    // the total count of NFTs staked
     uint256 stakedCount;
+
+    // token ID -> isStaked flag
     mapping(uint256 => bool) stakedTokens;
 }
 
@@ -17,7 +24,7 @@ struct AccountStake {
 /// as claimable tokens.
 contract NFTStaking is Ownable {
     /// @notice The amount of tokens that are emitted per day per NFT.
-    uint256 public constant DAILY_RATE = 1 ether;
+    uint256 public constant DAILY_RATE = 1 * 10**18;
 
     // ---
     // Storage
@@ -100,7 +107,7 @@ contract NFTStaking is Ownable {
         if (amount > 0) {
             // reverts if contract not approved to spend msg.sender tokens
             // reverts if insufficient balance in msg.sender
-            // reverts if invalid token reference
+            // reverts if staking not set up
             token.transferFrom(msg.sender, address(this), amount);
         }
 
@@ -117,7 +124,9 @@ contract NFTStaking is Ownable {
 
     /// @notice Stake multiple NFTs
     function stakeNFTs(uint256[] memory tokenIds) external {
-        // flush rewards to accumulator
+        // flush rewards to accumulator, basically buffers the current claim
+        // since we are about the change the "rate" of rewards when we stake
+        // more NFTs
         _stakes[msg.sender].earned = getClaimable(msg.sender);
         _stakes[msg.sender].lastClaimTime = block.timestamp;
         _stakes[msg.sender].stakedCount += tokenIds.length;
@@ -196,12 +205,16 @@ contract NFTStaking is Ownable {
 
     /// @notice Returns the total claimable tokens for a given account.
     function getClaimable(address account) public view returns (uint256) {
+        // either claim up until now, or the rewards cutoff time if we've
+        // already passed that date
         uint256 claimUntil = block.timestamp < rewardUntilTimestamp
             ? block.timestamp
             : rewardUntilTimestamp;
+
         uint256 delta = claimUntil - _stakes[account].lastClaimTime;
         uint256 emitted = (_stakes[account].stakedCount * DAILY_RATE * delta) /
             1 days;
+
         return emitted + _stakes[account].earned;
     }
 
