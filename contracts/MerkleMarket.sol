@@ -13,7 +13,6 @@ struct Order {
     uint256 maxAmount;
     bytes32[] proof;
     uint256 amount;
-    string memo;
 }
 
 /// @notice Simple vending machine (eg, for community prizes) that stores
@@ -28,8 +27,7 @@ contract MerkleMarket is Ownable {
         string itemId,
         IERC20 token,
         uint256 unitPrice,
-        uint256 amount,
-        string memo
+        uint256 amount
     );
 
     // ---
@@ -71,7 +69,7 @@ contract MerkleMarket is Ownable {
     // ---
 
     /// @notice Purchase items from the marketplace
-    function purchase(Order[] calldata orders) external {
+    function purchase(Order[] calldata orders) public {
         for (uint256 i = 0; i < orders.length; i++) {
             bool isValid = MerkleProof.verify(
                 orders[i].proof,
@@ -105,8 +103,7 @@ contract MerkleMarket is Ownable {
                 orders[i].itemId,
                 orders[i].token,
                 orders[i].unitPrice,
-                orders[i].amount,
-                orders[i].memo
+                orders[i].amount
             );
         }
     }

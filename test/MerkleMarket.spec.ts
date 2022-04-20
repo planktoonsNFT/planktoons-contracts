@@ -51,7 +51,6 @@ describe("MerkleMarket.sol", () => {
         maxAmount: 100,
         proof: createProofForIndex(0),
         token: token.address,
-        memo: "hey",
       },
     ]);
     expect(await token.balanceOf(a0)).to.equal(parseUnits("80"));
@@ -80,7 +79,6 @@ describe("MerkleMarket.sol", () => {
           maxAmount: 10,
           proof: createProofForIndex(0),
           token: token.address,
-          memo: "hey",
         },
       ])
     ).to.be.revertedWith("InvalidItem()");
