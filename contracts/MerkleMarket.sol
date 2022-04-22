@@ -55,7 +55,7 @@ contract MerkleMarket is Ownable {
     // ---
 
     /// @notice Set the merkle root of the inventory tree.
-    function setInventoryRoot(bytes32 root) external onlyOwner {
+    function setInventoryRoot(bytes32 root) public onlyOwner {
         inventoryRoot = root;
     }
 
