@@ -4,7 +4,7 @@ import { MockERC721, MockERC20, NFTStaking } from "../typechain";
 import { parseUnits } from "ethers/lib/utils";
 import { expect } from "chai";
 
-describe.only("NFTStaking.sol", () => {
+describe("NFTStaking.sol", () => {
   // ---
   // fixtures
   // ---
@@ -107,7 +107,10 @@ describe.only("NFTStaking.sol", () => {
     ).to.be.revertedWith("NotTokenOwner()");
   });
   it("should revert if attempting to set cutoff in the past", async () => {
-    //
+    const { timestamp } = await ethers.provider.getBlock("latest");
+    await expect(
+      staking.depositRewards(0, timestamp - 1000)
+    ).to.be.revertedWith("InvalidRewardUntilTimestamp()");
   });
   it("should revert if duplicate token IDs when staking", async () => {
     await nft.mint("1");
@@ -116,10 +119,15 @@ describe.only("NFTStaking.sol", () => {
     ).to.be.revertedWith("NotTokenOwner()");
   });
   it("should revert if duplicate token IDs when unstaking", async () => {
-    //
+    await nft.mint("1");
+    await staking.stakeNFTs(["1"]);
+    await expect(staking.claimAndUnstakeNFTs(["1", "1"])).to.be.reverted;
   });
   it("should revert if unstaking an unstaked NFT", async () => {
-    //
+    await nft.mint("1");
+    await staking.stakeNFTs(["1"]);
+    await staking.claimAndUnstakeNFTs(["1"]);
+    await expect(staking.claimAndUnstakeNFTs(["1"])).to.be.reverted;
   });
   it("should revert if unstaking an NFT staked by a different address", async () => {
     //
