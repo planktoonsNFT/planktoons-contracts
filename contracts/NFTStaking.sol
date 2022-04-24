@@ -8,13 +8,13 @@ import {IERC165} from "@openzeppelin/contracts/interfaces/IERC165.sol";
 
 struct AccountStake {
     // buffered rewards... tokens earned by an account but not yet distributed
-    uint256 earned;
+    uint96 earned;
 
     // the last time a claim occured
-    uint256 lastClaimTime;
+    uint96 lastClaimTime;
 
     // the total count of NFTs staked
-    uint256 stakedCount;
+    uint32 stakedCount;
 
     // token ID -> isStaked flag
     mapping(uint256 => bool) stakedTokens;
@@ -127,9 +127,9 @@ contract NFTStaking is Ownable {
         // flush rewards to accumulator, basically buffers the current claim
         // since we are about the change the "rate" of rewards when we stake
         // more NFTs
-        _stakes[msg.sender].earned = getClaimable(msg.sender);
-        _stakes[msg.sender].lastClaimTime = block.timestamp;
-        _stakes[msg.sender].stakedCount += tokenIds.length;
+        _stakes[msg.sender].earned = uint96(getClaimable(msg.sender));
+        _stakes[msg.sender].lastClaimTime = uint96(block.timestamp);
+        _stakes[msg.sender].stakedCount += uint32(tokenIds.length);
 
         for (uint256 i = 0; i < tokenIds.length; i++) {
             uint256 tokenId = tokenIds[i];
@@ -160,7 +160,7 @@ contract NFTStaking is Ownable {
     /// @notice Claim all unearned tokens and unstake a subset of staked NFTs
     function claimAndUnstakeNFTs(uint256[] memory tokenIds) external {
         _claimFor(msg.sender);
-        _stakes[msg.sender].stakedCount -= tokenIds.length;
+        _stakes[msg.sender].stakedCount -= uint32(tokenIds.length);
 
         for (uint256 i = 0; i < tokenIds.length; i++) {
             _unstake(msg.sender, tokenIds[i]);
@@ -171,9 +171,9 @@ contract NFTStaking is Ownable {
     /// due to insufficient rewards reserve balance.
     function emergencyUnstake(uint256[] memory tokenIds) external {
         // flush rewards to accumulator
-        _stakes[msg.sender].earned += getClaimable(msg.sender);
-        _stakes[msg.sender].lastClaimTime = block.timestamp;
-        _stakes[msg.sender].stakedCount -= tokenIds.length;
+        _stakes[msg.sender].earned += uint96(getClaimable(msg.sender));
+        _stakes[msg.sender].lastClaimTime = uint96(block.timestamp);
+        _stakes[msg.sender].stakedCount -= uint32(tokenIds.length);
 
         for (uint256 i = 0; i < tokenIds.length; i++) {
             _unstake(msg.sender, tokenIds[i]);
@@ -192,7 +192,7 @@ contract NFTStaking is Ownable {
         uint256 claimable = getClaimable(account);
         if (claimable == 0) return; // allow silent nop
         _stakes[account].earned = 0;
-        _stakes[account].lastClaimTime = block.timestamp;
+        _stakes[account].lastClaimTime = uint96(block.timestamp);
         emit TokensClaimed(account, claimable);
 
         // reverts if insufficient rewards reserves
