@@ -4,7 +4,6 @@ pragma solidity ^0.8.0;
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IERC721} from "@openzeppelin/contracts/interfaces/IERC721.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
-import {IERC165} from "@openzeppelin/contracts/interfaces/IERC165.sol";
 
 struct AccountStake {
     // buffered rewards... tokens earned by an account but not yet distributed
@@ -62,9 +61,6 @@ contract NFTStaking is Ownable {
     /// @notice Setup was attempted more than once.
     error AlreadySetup();
 
-    /// @notice Setup was attempted with an invalid nft reference.
-    error InvalidToken();
-
     /// @notice A token was attempted to be staked that wasn't owned by the staker.
     error NotTokenOwner();
 
@@ -88,11 +84,6 @@ contract NFTStaking is Ownable {
 
         nft = nft_;
         token = token_;
-
-        // check that the nft is a valid 721
-        if (!IERC165(nft).supportsInterface(type(IERC721).interfaceId)) {
-            revert InvalidToken();
-        }
 
         // reverts if contract not approved to spend msg.sender tokens
         // reverts if insufficient balance in msg.sender
