@@ -217,4 +217,14 @@ describe("NFTStaking.sol", () => {
       "InvalidUnstake()"
     );
   });
+  it("should allow querying to see if an NFT is staked by an account", async () => {
+    await nft.mint("1");
+    await nft.mint("2");
+    expect(await staking.isStakedForAccount(a0, "1")).to.equal(false);
+    await staking.stakeNFTs(["1"]);
+    expect(await staking.isStakedForAccount(a0, "1")).to.equal(true);
+    expect(await staking.isStakedForAccount(a0, "2")).to.equal(false);
+    await staking.claimAndUnstakeNFTs(["1"]);
+    expect(await staking.isStakedForAccount(a0, "1")).to.equal(false);
+  });
 });

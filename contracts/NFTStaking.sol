@@ -210,4 +210,13 @@ contract NFTStaking is Ownable {
     function getStakedBalance(address account) public view returns (uint256) {
         return _stakes[account].stakedCount;
     }
+
+    /// @notice Returns true of a specific token ID has been staked by a specific address
+    function isStakedForAccount(address account, uint256 tokenId)
+        public
+        view
+        returns (bool)
+    {
+        return _stakes[account].stakedTokens[tokenId];
+    }
 }
