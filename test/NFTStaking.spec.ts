@@ -1,7 +1,7 @@
 import { ethers } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { MockERC721, MockERC20, NFTStaking } from "../typechain";
-import { formatUnits, parseUnits } from "ethers/lib/utils";
+import { parseUnits } from "ethers/lib/utils";
 import { expect } from "chai";
 
 describe("NFTStaking.sol", () => {
@@ -177,7 +177,44 @@ describe("NFTStaking.sol", () => {
     expect(await staking.getClaimable(a0)).to.equal(parseUnits("33")); // 32 + 1
 
     await staking.emergencyUnstake(["1"]);
-    await increaseTimestampAndMineNextBlock(60 * 60 * 24 * 1); // 1 day later
+    await increaseTimestampAndMineNextBlock(60 * 60 * 24 * 1); // 1 day later -> unstake
     expect(await staking.getClaimable(a0)).to.equal(parseUnits("35")); // 33 + 2
+
+    await increaseTimestampAndMineNextBlock(60 * 60 * 24 * 10); // 10 days later
+    expect(await staking.getClaimable(a0)).to.equal(parseUnits("45")); // 35 + 10
+    await staking.emergencyUnstake(["2"]);
+    await increaseTimestampAndMineNextBlock(60 * 60 * 24 * 1); // 1 day later -> unstake
+    expect(await staking.getClaimable(a0)).to.equal(parseUnits("46"));
+
+    await increaseTimestampAndMineNextBlock(60 * 60 * 24 * 10); // 10 days later
+    expect(await staking.getClaimable(a0)).to.equal(parseUnits("46"));
+
+    await staking.claim();
+    await increaseTimestampAndMineNextBlock(60 * 60 * 24 * 1); // 1 day later -> claim
+    expect(await staking.getClaimable(a0)).to.equal(parseUnits("0"));
+    await increaseTimestampAndMineNextBlock(60 * 60 * 24 * 10); // 10 days later
+    expect(await staking.getClaimable(a0)).to.equal(parseUnits("0"));
+  });
+  it("should not allow emergency unstaking invalid tokens", async () => {
+    await nft.mint("1");
+    await nft.mint("2");
+    await staking.stakeNFTs(["1", "2"]);
+
+    await increaseTimestampAndMineNextBlock(60 * 60 * 24 * 1); // 1 day later
+    await staking.emergencyUnstake(["2"]);
+    await increaseTimestampAndMineNextBlock(60 * 60 * 24 * 1); // 1 day later
+    await expect(staking.emergencyUnstake(["2"])).to.be.revertedWith(
+      "InvalidUnstake()"
+    );
+  });
+  it("should not allow emergency duplicate token IDs", async () => {
+    await nft.mint("1");
+    await nft.mint("2");
+    await staking.stakeNFTs(["1", "2"]);
+
+    await increaseTimestampAndMineNextBlock(60 * 60 * 24 * 1); // 1 day later
+    await expect(staking.emergencyUnstake(["1", "1"])).to.be.revertedWith(
+      "InvalidUnstake()"
+    );
   });
 });
