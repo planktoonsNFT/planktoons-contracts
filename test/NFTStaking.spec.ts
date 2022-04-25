@@ -227,7 +227,7 @@ describe("NFTStaking.sol", () => {
     await staking.claimAndUnstakeNFTs(["1"]);
     expect(await staking.isStakedForAccount(a0, "1")).to.equal(false);
   });
-  it.only("should handle random staking and unstaking", async () => {
+  it("should handle random staking and unstaking", async () => {
     await nft.mint("1");
     await nft.mint("2");
     await nft.mint("3");
