@@ -8,13 +8,10 @@ import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 struct AccountStake {
     // buffered rewards... tokens earned by an account but not yet distributed
     uint96 earned;
-
     // the last time a claim occured
     uint96 lastClaimTime;
-
     // the total count of NFTs staked
     uint32 stakedCount;
-
     // token ID -> isStaked flag
     mapping(uint256 => bool) stakedTokens;
 }
@@ -162,7 +159,7 @@ contract NFTStaking is Ownable {
     /// due to insufficient rewards reserve balance.
     function emergencyUnstake(uint256[] memory tokenIds) external {
         // flush rewards to accumulator
-        _stakes[msg.sender].earned += uint96(getClaimable(msg.sender));
+        _stakes[msg.sender].earned = uint96(getClaimable(msg.sender));
         _stakes[msg.sender].lastClaimTime = uint96(block.timestamp);
         _stakes[msg.sender].stakedCount -= uint32(tokenIds.length);
 

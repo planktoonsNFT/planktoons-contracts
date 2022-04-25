@@ -162,4 +162,22 @@ describe("NFTStaking.sol", () => {
     const balance = await token.balanceOf(a0);
     expect(balance.lt(parseUnits("365"))).to.equal(true);
   });
+  it("should not increase reward accumulator when emergency unstaking", async () => {
+    await nft.mint("1");
+    await nft.mint("2");
+    await setAutomine(false);
+    await staking.stakeNFTs(["1"]);
+    await mineNextBlock(); // staked
+    await increaseTimestampAndMineNextBlock(60 * 60 * 24 * 30); // 30 days later
+    expect(await staking.getClaimable(a0)).to.equal(parseUnits("30"));
+
+    await staking.stakeNFTs(["2"]); // flushes to accumulator
+    await increaseTimestampAndMineNextBlock(60 * 60 * 24 * 1); // 1 day later -> stake
+    await increaseTimestampAndMineNextBlock(60 * 60 * 24 * 1); // 1 day later
+    expect(await staking.getClaimable(a0)).to.equal(parseUnits("33")); // 32 + 1
+
+    await staking.emergencyUnstake(["1"]);
+    await increaseTimestampAndMineNextBlock(60 * 60 * 24 * 1); // 1 day later
+    expect(await staking.getClaimable(a0)).to.equal(parseUnits("35")); // 33 + 2
+  });
 });
