@@ -207,7 +207,7 @@ describe("NFTStaking.sol", () => {
       "InvalidUnstake()"
     );
   });
-  it("should not allow emergency duplicate token IDs", async () => {
+  it("should not allow emergency unstaking duplicate token IDs", async () => {
     await nft.mint("1");
     await nft.mint("2");
     await staking.stakeNFTs(["1", "2"]);
@@ -226,5 +226,44 @@ describe("NFTStaking.sol", () => {
     expect(await staking.isStakedForAccount(a0, "2")).to.equal(false);
     await staking.claimAndUnstakeNFTs(["1"]);
     expect(await staking.isStakedForAccount(a0, "1")).to.equal(false);
+  });
+  it.only("should handle random staking and unstaking", async () => {
+    await nft.mint("1");
+    await nft.mint("2");
+    await nft.mint("3");
+    await nft.mint("4");
+    await nft.mint("5");
+
+    await setAutomine(false);
+    await staking.stakeNFTs(["1", "4", "5"]);
+    await mineNextBlock(); // staked
+
+    await staking.claim();
+    await increaseTimestampAndMineNextBlock(60 * 60 * 24 * 1); // +1 days
+    expect(await token.balanceOf(a0)).to.equal(parseUnits("3"));
+    expect(await staking.getClaimable(a0)).to.equal(parseUnits("0"));
+
+    await staking.claimAndUnstakeNFTs(["4"]);
+    await increaseTimestampAndMineNextBlock(60 * 60 * 24 * 1); // +1 days
+    expect(await token.balanceOf(a0)).to.equal(parseUnits("6"));
+    expect(await staking.getClaimable(a0)).to.equal(parseUnits("0"));
+
+    await increaseTimestampAndMineNextBlock(60 * 60 * 24 * 1); // +1 days
+    expect(await token.balanceOf(a0)).to.equal(parseUnits("6"));
+    expect(await staking.getClaimable(a0)).to.equal(parseUnits("2"));
+
+    await staking.stakeNFTs(["3", "4"]);
+    await increaseTimestampAndMineNextBlock(60 * 60 * 24 * 1); // +1 days
+    expect(await token.balanceOf(a0)).to.equal(parseUnits("6"));
+    expect(await staking.getClaimable(a0)).to.equal(parseUnits("4"));
+
+    await increaseTimestampAndMineNextBlock(60 * 60 * 24 * 10); // +10 days
+    expect(await token.balanceOf(a0)).to.equal(parseUnits("6"));
+    expect(await staking.getClaimable(a0)).to.equal(parseUnits("44"));
+
+    await staking.claim();
+    await increaseTimestampAndMineNextBlock(60 * 60 * 24 * 1); // +1 days
+    expect(await token.balanceOf(a0)).to.equal(parseUnits("54"));
+    expect(await staking.getClaimable(a0)).to.equal(parseUnits("0"));
   });
 });
