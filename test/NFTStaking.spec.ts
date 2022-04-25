@@ -1,7 +1,7 @@
 import { ethers } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { MockERC721, MockERC20, NFTStaking } from "../typechain";
-import { parseUnits } from "ethers/lib/utils";
+import { formatUnits, parseUnits } from "ethers/lib/utils";
 import { expect } from "chai";
 
 describe("NFTStaking.sol", () => {
@@ -130,7 +130,17 @@ describe("NFTStaking.sol", () => {
     await expect(staking.claimAndUnstakeNFTs(["1"])).to.be.reverted;
   });
   it("should revert if unstaking an NFT staked by a different address", async () => {
-    //
+    await nft.mint("1");
+    await staking.stakeNFTs(["1"]);
+
+    // ensuring we dont fail earlier
+    await nft.connect(accounts[1]).mint("2");
+    await nft.connect(accounts[1]).setApprovalForAll(staking.address, true);
+    await staking.connect(accounts[1]).stakeNFTs(["2"]);
+
+    await expect(
+      staking.connect(accounts[1]).claimAndUnstakeNFTs(["1"])
+    ).to.be.revertedWith("InvalidUnstake()");
   });
   it("should revert setting up more than once", async () => {
     await expect(
@@ -143,5 +153,13 @@ describe("NFTStaking.sol", () => {
         .connect(accounts[1])
         .setup(nft.address, token.address, parseUnits("1000"))
     ).to.be.revertedWith("caller is not the owner");
+  });
+  it("should not continue yielding rewards after cutoff date", async () => {
+    await nft.mint("1");
+    await staking.stakeNFTs(["1"]);
+    await increaseTimestampAndMineNextBlock(60 * 60 * 24 * 365 * 5); // 5 years later
+    await staking.claim();
+    const balance = await token.balanceOf(a0);
+    expect(balance.lt(parseUnits("365"))).to.equal(true);
   });
 });
