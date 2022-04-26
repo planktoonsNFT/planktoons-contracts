@@ -82,9 +82,7 @@ describe("NFTStaking.sol", () => {
     await increaseTimestampAndMineNextBlock(60 * 60 * 24 * 10);
 
     // not enough reserve tokens
-    await expect(staking.claimAndUnstakeNFTs(["1"])).to.be.revertedWith(
-      "transfer amount exceeds balance"
-    );
+    await expect(staking.claimAndUnstakeNFTs(["1"])).to.be.reverted;
     await staking.emergencyUnstake(["1"]); // doesnt revert
     expect(await nft.ownerOf("1")).to.equal(a0);
   });
