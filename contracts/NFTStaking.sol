@@ -6,7 +6,8 @@ import {IERC721} from "@openzeppelin/contracts/interfaces/IERC721.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 
 struct AccountStake {
-    // buffered rewards... tokens earned by an account but not yet distributed
+    // buffered rewards... tokens earned by an account but not yet distributed.
+    // 96 bit int -> 79 billion max earned token accumulator
     uint96 earned;
     // the last time a claim occured
     uint96 lastClaimTime;
