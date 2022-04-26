@@ -149,7 +149,7 @@ contract NFTStaking is Ownable {
     /// @notice Claim all unearned tokens and unstake a subset of staked NFTs
     function claimAndUnstakeNFTs(uint256[] memory tokenIds) external {
         _claimFor(msg.sender);
-        _stakes[msg.sender].stakedCount -= uint32(tokenIds.length);
+        _stakes[msg.sender].stakedCount -= uint32(tokenIds.length); // reverts on overflow
 
         for (uint256 i = 0; i < tokenIds.length; i++) {
             _unstake(msg.sender, tokenIds[i]);
@@ -162,7 +162,7 @@ contract NFTStaking is Ownable {
         // flush rewards to accumulator
         _stakes[msg.sender].earned = uint96(getClaimable(msg.sender));
         _stakes[msg.sender].lastClaimTime = uint96(block.timestamp);
-        _stakes[msg.sender].stakedCount -= uint32(tokenIds.length);
+        _stakes[msg.sender].stakedCount -= uint32(tokenIds.length); // reverts on overflow
 
         for (uint256 i = 0; i < tokenIds.length; i++) {
             _unstake(msg.sender, tokenIds[i]);
