@@ -16,6 +16,7 @@
   "dependencies": {
     "@openzeppelin/contracts": "4.4.1",
     "@openzeppelin/contracts-upgradeable": "4.4.1",
+    "@rari-capital/solmate": "^6.2.0",
     "merkletreejs": "^0.2.31"
   },
   "devDependencies": {
