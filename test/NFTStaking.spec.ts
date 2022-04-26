@@ -30,7 +30,7 @@ describe("NFTStaking.sol", () => {
     // admin setup
     const initialDeposit = parseUnits("1000000");
     await token.mint(initialDeposit);
-    await token.approve(staking.address, initialDeposit);
+    await token.approve(staking.address, parseUnits("100000000000000000000"));
     await staking.setup(nft.address, token.address, initialDeposit);
 
     // holder setup
@@ -263,5 +263,26 @@ describe("NFTStaking.sol", () => {
     await increaseTimestampAndMineNextBlock(60 * 60 * 24 * 1); // +1 days
     expect(await token.balanceOf(a0)).to.equal(parseUnits("54"));
     expect(await staking.getClaimable(a0)).to.equal(parseUnits("0"));
+  });
+  it("should not change cutoff timestamp if just refilling reserves", async () => {
+    const cutoff = await staking.rewardUntilTimestamp();
+    await token.mint(parseUnits("100"));
+    await staking.depositRewards(parseUnits("100"), 0);
+    expect(await staking.rewardUntilTimestamp()).to.equal(cutoff);
+  });
+  it("should not attempt token transfer if just updating reward timestamp", async () => {
+    const cutoff = await staking.rewardUntilTimestamp();
+    // would revert if token transfer attempted
+    await staking.depositRewards(0, cutoff.add(1));
+  });
+  it("should revert of non-owner attempts to deposit rewards", async () => {
+    // ensure everything else is legit
+    const amount = parseUnits("100");
+    await token.connect(accounts[1]).mint(amount);
+    await token.connect(accounts[1]).approve(staking.address, amount);
+
+    await expect(
+      staking.connect(accounts[1]).depositRewards(amount, 0)
+    ).to.be.revertedWith("caller is not the owner");
   });
 });

@@ -91,7 +91,7 @@ contract NFTStaking is Ownable {
 
     /// @notice Deposit more reward tokens (if amount > 0) and update the
     /// rewards cutoff date (if cutoff > 0))
-    function depositRewards(uint256 amount, uint256 cutoff) external {
+    function depositRewards(uint256 amount, uint256 cutoff) external onlyOwner {
         if (amount > 0) {
             // reverts if contract not approved to spend msg.sender tokens
             // reverts if insufficient balance in msg.sender
