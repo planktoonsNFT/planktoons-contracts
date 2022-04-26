@@ -23,7 +23,7 @@ describe("SPANK.sol", () => {
   });
 
   it("should have correct metadata", async () => {
-    expect(await token.name()).to.equal("Spank");
+    expect(await token.name()).to.equal("SPANK");
     expect(await token.symbol()).to.equal("SPANK");
     expect(await token.decimals()).to.equal(18);
   });
