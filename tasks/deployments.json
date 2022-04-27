@@ -5,5 +5,8 @@
     "PlanktoonsStaking": "0x72Cdb6e120148c641cd741827EBd8E66182c0c2D",
     "PlanktoonsMarket": "0x87Abde9019B3126dB3d6BA58c01243506cc2158a",
     "PlanktoonsAirdrop": "0xa6b98B15523D194D21163f6Da06F78C8008d02DF"
+  },
+  "eth": {
+    "SPANK": "0x8c6DF8A349f0C861F7ABb0e8EB10cB3b0cFD5fDB"
   }
 }
