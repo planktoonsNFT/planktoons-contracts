@@ -10,12 +10,24 @@ task("deploy", "Deploy a contract")
     const ContractFactory: any = await ethers.getContractFactory(contract);
 
     console.log(`Deploying ${contract} ...`);
-    const deployed = await ContractFactory.deploy();
+
+    const constructorArguments: unknown[] = [];
+    if (contract === "PlanktoonsBalance") {
+      const entries = await readDeploymentsFile();
+      const nft = entries[network.name]?.Planktoons;
+      const staking = entries[network.name]?.PlanktoonsStaking;
+      constructorArguments.push(nft, staking);
+    }
+
+    const deployed = await ContractFactory.deploy(...constructorArguments);
     await deployed.deployed();
     const address = deployed.address;
 
     console.log("\n\n---");
     console.log(`🚀 ${contract}: ${address}`);
+    if (constructorArguments.length > 0) {
+      console.log(`\nconstructor args: ${constructorArguments.join(" ")}`);
+    }
     console.log("---\n\n");
 
     if (network.name !== "localhost" && network.name !== "hardhat") {
@@ -32,7 +44,7 @@ task("deploy", "Deploy a contract")
       try {
         await run("verify:verify", {
           address: deployed.address,
-          constructorArguments: [],
+          constructorArguments,
         });
       } catch (err) {
         console.warn("Verfication error:", err);
