@@ -152,6 +152,16 @@ describe("MerkleAirdrop.sol", () => {
     ).to.be.revertedWith("caller is not the owner");
   });
   it("should allow permissionlessly 3rd party claiming", async () => {
-    //
+    const { tree, createProof } = getTree();
+    await token.mint(parseUnits("500"));
+
+    await airdrop.setup(token.address, parseUnits("500"), tree.getHexRoot());
+    await airdrop.claimFor(
+      accounts[1].address,
+      parseUnits("300"),
+      createProof([a1, parseUnits("300")])
+    );
+    expect(await token.balanceOf(a0)).to.equal(parseUnits("0"));
+    expect(await token.balanceOf(a1)).to.equal(parseUnits("300"));
   });
 });
