@@ -10,6 +10,7 @@
   "eth": {
     "Planktoons": "0xa411c5fbf61dde466ed9b1f0120058231aa0a509",
     "SPANK": "0x8c6DF8A349f0C861F7ABb0e8EB10cB3b0cFD5fDB",
-    "PlanktoonsStaking": "0x2649A76feef188d5D5aC0D66F1c3798dFb9C2031"
+    "PlanktoonsStaking": "0x2649A76feef188d5D5aC0D66F1c3798dFb9C2031",
+    "PlanktoonsBalance": "0x5D378d20f6fDCa8dE4DBa5EFf433D985DaBB9e20"
   }
 }
