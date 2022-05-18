@@ -5,7 +5,7 @@ import { createMerkleTree, zero256 } from "./util";
 import { parseUnits } from "ethers/lib/utils";
 import { expect } from "chai";
 
-describe("MerkleMarket.sol", () => {
+describe.only("MerkleMarket.sol", () => {
   // ---
   // fixtures
   // ---
@@ -57,13 +57,52 @@ describe("MerkleMarket.sol", () => {
     expect(await market.getTotalPurchased("foo")).to.equal(2);
   });
   it("should allow allow owner to withdraw tokens", async () => {
-    //
-  });
-  it("should allow allow owner to set inventory root", async () => {
-    //
+    const { tree, createProofForIndex } = getTree();
+    await token.mint(parseUnits("100"));
+    await market.setInventoryRoot(tree.getHexRoot());
+    await market.purchase([
+      {
+        itemId: "foo",
+        amount: 2,
+        unitPrice: parseUnits("10"),
+        maxAmount: 100,
+        proof: createProofForIndex(0),
+        token: token.address,
+      },
+    ]);
+    expect(await token.balanceOf(a0)).to.equal(parseUnits("80"));
+    await market.withdraw(token.address);
+    expect(await token.balanceOf(a0)).to.equal(parseUnits("100"));
   });
   it("should revert if insufficient remaining inventory", async () => {
-    //
+    const { tree, createProofForIndex } = getTree();
+    await token.mint(parseUnits("20000"));
+    await market.setInventoryRoot(tree.getHexRoot());
+
+    // buy all stock
+    await market.purchase([
+      {
+        itemId: "foo",
+        amount: 100,
+        unitPrice: parseUnits("10"),
+        maxAmount: 100,
+        proof: createProofForIndex(0),
+        token: token.address,
+      },
+    ]);
+
+    await expect(
+      market.purchase([
+        {
+          itemId: "foo",
+          amount: 100,
+          unitPrice: parseUnits("10"),
+          maxAmount: 100,
+          proof: createProofForIndex(0),
+          token: token.address,
+        },
+      ])
+    ).to.be.revertedWith("NoRemainingSupply()");
   });
   it("should revert if order has invalid proof", async () => {
     const { tree, createProofForIndex } = getTree();
@@ -84,9 +123,28 @@ describe("MerkleMarket.sol", () => {
     ).to.be.revertedWith("InvalidItem()");
   });
   it("should revert if non owner attempts to set inventory root", async () => {
-    //
+    const { tree } = getTree();
+    await token.mint(parseUnits("100"));
+    await expect(
+      market.connect(accounts[1]).setInventoryRoot(tree.getHexRoot())
+    ).to.be.revertedWith("caller is not the owner");
   });
   it("should revert if non owner attempts to withdraw", async () => {
-    //
+    const { tree, createProofForIndex } = getTree();
+    await token.mint(parseUnits("100"));
+    await market.setInventoryRoot(tree.getHexRoot());
+    await market.purchase([
+      {
+        itemId: "foo",
+        amount: 2,
+        unitPrice: parseUnits("10"),
+        maxAmount: 100,
+        proof: createProofForIndex(0),
+        token: token.address,
+      },
+    ]);
+    await expect(
+      market.connect(accounts[1]).withdraw(token.address)
+    ).to.be.revertedWith("caller is not the owner");
   });
 });
