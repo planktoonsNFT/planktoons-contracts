@@ -43,10 +43,13 @@ describe("PlanktoonsMarket.sol", () => {
   it("should allow basic claim and purchase", async () => {
     //
   });
-  it("should revert if setup called more than once", async () => {
+  it("should skip airdrop claim if max claimable is zero", async () => {
     //
   });
-  it("should skip airdrop claim if max claimable is zero", async () => {
+  it("should revert if no staked or owned nfts when purchasing", async () => {
+    //
+  });
+  it("should revert if no staked or owned nfts when purchasing + claiming", async () => {
     //
   });
 });

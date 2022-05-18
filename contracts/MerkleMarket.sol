@@ -69,7 +69,7 @@ contract MerkleMarket is Ownable {
     // ---
 
     /// @notice Purchase items from the marketplace
-    function purchase(Order[] calldata orders) public {
+    function purchase(Order[] calldata orders) public virtual {
         for (uint256 i = 0; i < orders.length; i++) {
             bool isValid = MerkleProof.verify(
                 orders[i].proof,

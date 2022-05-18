@@ -15,6 +15,14 @@ import {IERC721} from "@openzeppelin/contracts/interfaces/IERC721.sol";
 
 contract PlanktoonsMarket is MerkleMarket {
     // ---
+    // Errors
+    // ---
+
+    /// @notice A purchase was attempted by an account that does not own or have
+    /// any staked Planktoons NFTs
+    error NotAHolder();
+
+    // ---
     // Storage
     // ---
 
@@ -29,7 +37,11 @@ contract PlanktoonsMarket is MerkleMarket {
     /// @notice The Planktoons airdrop contract.
     MerkleAirdrop public immutable airdrop;
 
-    constructor(IERC721 nft_, NFTStaking staking_, MerkleAirdrop airdrop_) {
+    constructor(
+        IERC721 nft_,
+        NFTStaking staking_,
+        MerkleAirdrop airdrop_
+    ) {
         nft = nft_;
         staking = staking_;
         airdrop = airdrop_;
@@ -39,6 +51,12 @@ contract PlanktoonsMarket is MerkleMarket {
     // End user functionality
     // ---
 
+    /// @notice Purchase items from the marketplace
+    function purchase(Order[] calldata orders) public virtual override {
+        _assertHasNfts();
+        return MerkleMarket.purchase(orders);
+    }
+
     /// @notice Convenience function to claim from airdrop and staking contracts
     /// before purchasing from the market to save holders a few transactions.
     function claimAllAndPurchase(
@@ -46,6 +64,8 @@ contract PlanktoonsMarket is MerkleMarket {
         uint256 airdropMaxClaimable,
         bytes32[] calldata airdropProof
     ) external {
+        _assertHasNfts();
+
         // if nothing staked, nop is safe
         staking.claimFor(msg.sender);
 
@@ -56,5 +76,13 @@ contract PlanktoonsMarket is MerkleMarket {
         }
 
         purchase(orders);
+    }
+
+    function _assertHasNfts() internal view {
+        uint256 owned = nft.balanceOf(msg.sender) +
+            staking.getStakedBalance(msg.sender);
+        if (owned == 0) {
+            revert NotAHolder();
+        }
     }
 }
