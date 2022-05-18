@@ -17,6 +17,12 @@ task("deploy", "Deploy a contract")
       const nft = entries[network.name]?.Planktoons;
       const staking = entries[network.name]?.PlanktoonsStaking;
       constructorArguments.push(nft, staking);
+    } else if (contract === "PlanktoonsMarket") {
+      const entries = await readDeploymentsFile();
+      const nft = entries[network.name]?.Planktoons;
+      const staking = entries[network.name]?.PlanktoonsStaking;
+      const airdrop = entries[network.name]?.PlanktoonsAirdrop;
+      constructorArguments.push(nft, staking, airdrop);
     }
 
     const deployed = await ContractFactory.deploy(...constructorArguments);
