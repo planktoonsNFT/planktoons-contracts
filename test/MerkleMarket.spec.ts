@@ -5,7 +5,7 @@ import { createMerkleTree, zero256 } from "./util";
 import { parseUnits } from "ethers/lib/utils";
 import { expect } from "chai";
 
-describe.only("MerkleMarket.sol", () => {
+describe("MerkleMarket.sol", () => {
   // ---
   // fixtures
   // ---
