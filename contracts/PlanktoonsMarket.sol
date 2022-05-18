@@ -1,6 +1,13 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+/*
+
+    Planktoons market contract
+      https://planktoons.io
+
+*/
+
 import {MerkleMarket, Order} from "./MerkleMarket.sol";
 import {MerkleAirdrop} from "./MerkleAirdrop.sol";
 import {NFTStaking} from "./NFTStaking.sol";
@@ -8,51 +15,24 @@ import {IERC721} from "@openzeppelin/contracts/interfaces/IERC721.sol";
 
 contract PlanktoonsMarket is MerkleMarket {
     // ---
-    // Errors
-    // ---
-
-    /// @notice Setup function was called more than once.
-    error AlreadySetup();
-
-    // ---
     // Storage
     // ---
 
     string public constant name = "PlanktoonsMarket";
 
     /// @notice The Planktoons nft contract
-    IERC721 public nft;
+    IERC721 public immutable nft;
 
     /// @notice The Planktoons staking contract.
-    NFTStaking public staking;
+    NFTStaking public immutable staking;
 
     /// @notice The Planktoons airdrop contract.
-    MerkleAirdrop public airdrop;
+    MerkleAirdrop public immutable airdrop;
 
-    // ---
-    // Admin functionality
-    // ---
-
-    /// @notice Initialize the market contract.
-    function setup(
-        IERC721 nft_,
-        NFTStaking staking_,
-        MerkleAirdrop airdrop_,
-        bytes32 root
-    ) external onlyOwner {
-        if (
-            address(nft) != address(0) ||
-            address(staking) != address(0) ||
-            address(airdrop) != address(0)
-        ) {
-            revert AlreadySetup();
-        }
-
+    constructor(IERC721 nft_, NFTStaking staking_, MerkleAirdrop airdrop_) {
         nft = nft_;
         staking = staking_;
         airdrop = airdrop_;
-
-        setInventoryRoot(root);
     }
 
     // ---
