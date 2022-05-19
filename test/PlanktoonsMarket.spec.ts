@@ -41,7 +41,7 @@ describe("PlanktoonsMarket.sol", () => {
     ]);
     [a0, a1, a2, a3] = accounts.map((a) => a.address);
 
-    const market = await PlanktoonsMarket.deploy(
+    market = await PlanktoonsMarket.deploy(
       nft.address,
       staking.address,
       airdrop.address
@@ -61,15 +61,83 @@ describe("PlanktoonsMarket.sol", () => {
     );
 
   it("should allow basic claim and purchase", async () => {
-    //
+    const { tree, createProofForIndex } = getTree();
+    await nft.mint("1");
+    await token.mint(parseUnits("100"));
+    await market.setInventoryRoot(tree.getHexRoot());
+    expect(await market.getTotalPurchased("foo")).to.equal(0);
+    await market.purchase([
+      {
+        itemId: "foo",
+        amount: 2,
+        unitPrice: parseUnits("10"),
+        maxAmount: 100,
+        proof: createProofForIndex(0),
+        token: token.address,
+      },
+    ]);
+    expect(await token.balanceOf(a0)).to.equal(parseUnits("80"));
+    expect(await market.getTotalPurchased("foo")).to.equal(2);
   });
-  it("should skip airdrop claim if max claimable is zero", async () => {
-    //
+  it("should allow claim and purchase", async () => {
+    const { tree, createProofForIndex } = getTree();
+    await nft.mint("1");
+    await token.mint(parseUnits("100"));
+    await market.setInventoryRoot(tree.getHexRoot());
+    expect(await market.getTotalPurchased("foo")).to.equal(0);
+    await market.claimAllAndPurchase(
+      [
+        {
+          itemId: "foo",
+          amount: 2,
+          unitPrice: parseUnits("10"),
+          maxAmount: 100,
+          proof: createProofForIndex(0),
+          token: token.address,
+        },
+      ],
+      0,
+      []
+    );
+    expect(await token.balanceOf(a0)).to.equal(parseUnits("80"));
+    expect(await market.getTotalPurchased("foo")).to.equal(2);
   });
   it("should revert if no staked or owned nfts when purchasing", async () => {
-    //
+    const { tree, createProofForIndex } = getTree();
+    await token.mint(parseUnits("100"));
+    await market.setInventoryRoot(tree.getHexRoot());
+    await expect(
+      market.purchase([
+        {
+          itemId: "foo",
+          amount: 2,
+          unitPrice: parseUnits("10"),
+          maxAmount: 100,
+          proof: createProofForIndex(0),
+          token: token.address,
+        },
+      ])
+    ).to.be.revertedWith("NotAHolder");
   });
   it("should revert if no staked or owned nfts when purchasing + claiming", async () => {
-    //
+    const { tree, createProofForIndex } = getTree();
+    await token.mint(parseUnits("100"));
+    await market.setInventoryRoot(tree.getHexRoot());
+    await expect(
+      market.claimAllAndPurchase(
+        [
+          {
+            itemId: "foo",
+            amount: 2,
+            unitPrice: parseUnits("10"),
+            maxAmount: 100,
+            proof: createProofForIndex(0),
+            token: token.address,
+          },
+        ],
+        0,
+        []
+      )
+    ).to.be.revertedWith("NotAHolder");
   });
 });
